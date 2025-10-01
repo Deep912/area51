@@ -1,4 +1,4 @@
-# backend/main.py - Manual Ping Only (No Continuous Loop)
+# backend/main.py - Fixed Version
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -47,7 +47,7 @@ def create_access_token(username: str) -> str:
     data = f"{username}:{datetime.utcnow().isoformat()}"
     return binascii.hexlify(data.encode()).decode()
 
-# Enhanced Models (same as before)
+# FIXED Models - Correct column names
 class User(Base):
     __tablename__ = "users"
     
@@ -77,7 +77,7 @@ class Device(Base):
     business_criticality = Column(String, default="medium")
     environment = Column(String, default="production")
     
-    # Health monitoring fields
+    # Health monitoring fields - FIXED column names
     status = Column(String, default="unknown")  # online, offline, unknown
     response_time = Column(Float, default=0.0)  # ping response time in ms
     cpu_usage = Column(Float, default=0.0)
@@ -86,8 +86,7 @@ class Device(Base):
     uptime = Column(Integer, default=0)
     last_seen = Column(DateTime(timezone=True), server_default=sql_func.now())
     last_ping = Column(DateTime(timezone=True), nullable=True)
-    ping_success_count = Column(Integer, default=0)  # Total successful pings
-    ping_total_count = Column(Integer, default=0)    # Total ping attempts
+    ping_success_rate = Column(Float, default=100.0)  # FIXED: Use correct column name
     
     # Additional details
     description = Column(Text, nullable=True)
@@ -99,7 +98,7 @@ class Device(Base):
     created_at = Column(DateTime(timezone=True), server_default=sql_func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=sql_func.now())
 
-# Enhanced Schemas
+# Enhanced Schemas (same as before)
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
@@ -154,8 +153,7 @@ class DeviceResponse(BaseModel):
     uptime: int
     last_seen: datetime
     last_ping: Optional[datetime]
-    ping_success_count: int
-    ping_total_count: int
+    ping_success_rate: float
     description: Optional[str]
     location: Optional[str]
     owner_contact: Optional[str]
@@ -309,16 +307,15 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     print("🚀 Area51 Manual Ping Platform Ready!")
     
-    # Start background task for health simulation (CPU, RAM, etc.)
+    # Start background task for device health simulation only (no auto ping)
     asyncio.create_task(simulate_device_health())
     
     yield
 
-# Background task to simulate other health data (CPU, RAM, etc.) - No ping loop
+# Background task to simulate other health data (CPU, RAM, etc.) - NO PING
 async def simulate_device_health():
     """
-    Simulate CPU, RAM, disk usage (since we don't have agents yet)
-    No automatic pinging - only manual pings when user clicks
+    Simulate CPU, RAM, disk usage only (no automatic pinging)
     """
     while True:
         try:
@@ -327,41 +324,37 @@ async def simulate_device_health():
                 devices = result.scalars().all()
                 
                 for device in devices[:20]:  # Limit to first 20 devices
-                    # Only simulate health for devices that have been pinged recently
-                    # If device was never pinged, keep status as unknown
-                    if device.last_ping is not None:
-                        # Simulate more realistic metrics based on device type and status
-                        if device.status == "online":
-                            if device.device_type in ['server', 'virtual-server']:
-                                # Servers typically have higher, more stable usage
-                                device.cpu_usage = max(10, min(90, device.cpu_usage + random.uniform(-3, 3)))
-                                device.memory_usage = max(20, min(85, device.memory_usage + random.uniform(-2, 2)))
-                                device.disk_usage = max(15, min(95, device.disk_usage + random.uniform(-0.5, 0.5)))
-                                device.uptime += 30  # Increment uptime for online devices
-                            elif device.device_type in ['workstation', 'laptop', 'desktop']:
-                                # Workstations have more variable usage
-                                device.cpu_usage = max(0, min(100, device.cpu_usage + random.uniform(-10, 10)))
-                                device.memory_usage = max(10, min(95, device.memory_usage + random.uniform(-5, 5)))
-                                device.disk_usage = max(20, min(90, device.disk_usage + random.uniform(-1, 1)))
-                                device.uptime += 30
-                            else:
-                                # Other devices (mobile, IoT, etc.) have lower usage
-                                device.cpu_usage = max(0, min(60, device.cpu_usage + random.uniform(-5, 5)))
-                                device.memory_usage = max(5, min(70, device.memory_usage + random.uniform(-3, 3)))
-                                device.disk_usage = max(10, min(80, device.disk_usage + random.uniform(-0.5, 0.5)))
-                                device.uptime += 30
+                    # Only simulate health for devices that have been pinged before
+                    if device.status and device.status != "unknown":
+                        # Simulate more realistic metrics based on device type
+                        if device.device_type in ['server', 'virtual-server']:
+                            # Servers typically have higher, more stable usage
+                            device.cpu_usage = max(10, min(90, device.cpu_usage + random.uniform(-3, 3)))
+                            device.memory_usage = max(20, min(85, device.memory_usage + random.uniform(-2, 2)))
+                            device.disk_usage = max(15, min(95, device.disk_usage + random.uniform(-0.5, 0.5)))
+                        elif device.device_type in ['workstation', 'laptop', 'desktop']:
+                            # Workstations have more variable usage
+                            device.cpu_usage = max(0, min(100, device.cpu_usage + random.uniform(-10, 10)))
+                            device.memory_usage = max(10, min(95, device.memory_usage + random.uniform(-5, 5)))
+                            device.disk_usage = max(20, min(90, device.disk_usage + random.uniform(-1, 1)))
                         else:
-                            # Offline devices don't increment uptime
-                            pass
+                            # Other devices (mobile, IoT, etc.) have lower usage
+                            device.cpu_usage = max(0, min(60, device.cpu_usage + random.uniform(-5, 5)))
+                            device.memory_usage = max(5, min(70, device.memory_usage + random.uniform(-3, 3)))
+                            device.disk_usage = max(10, min(80, device.disk_usage + random.uniform(-0.5, 0.5)))
+                        
+                        # Increment uptime for online devices
+                        if device.status == "online":
+                            device.uptime += 15  # 15 seconds since last update
                 
                 await db.commit()
                 
         except Exception as e:
             logger.error(f"Health simulation error: {e}")
         
-        await asyncio.sleep(30)  # Update every 30 seconds
+        await asyncio.sleep(15)  # Update every 15 seconds
 
-app = FastAPI(title="Area51 Security Platform - Manual Ping", lifespan=lifespan)
+app = FastAPI(title="Area51 Security Platform - Manual Ping Mode", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -512,11 +505,12 @@ async def get_dashboard(token: str, db: AsyncSession = Depends(get_db)):
         )
     )
     
-    # Get average response time for devices with ping data
+    # Get average response time for online devices
     avg_response_time = await db.execute(
         select(func.avg(Device.response_time)).where(
             Device.owner_id == user.id,
             Device.is_active == True,
+            Device.status == "online",
             Device.response_time > 0
         )
     )
@@ -545,9 +539,7 @@ async def create_device(device: DeviceCreate, token: str, db: AsyncSession = Dep
         cpu_usage=random.uniform(10, 30),
         memory_usage=random.uniform(20, 40),
         disk_usage=random.uniform(15, 35),
-        uptime=0,  # Start with 0 uptime
-        ping_success_count=0,
-        ping_total_count=0,
+        uptime=0,
         is_active=True
     )
     
@@ -627,7 +619,9 @@ async def get_device(device_id: int, token: str, db: AsyncSession = Depends(get_
 
 @app.post("/api/devices/{device_id}/ping")
 async def manual_ping_device(device_id: int, token: str, db: AsyncSession = Depends(get_db)):
-    """Manually ping a specific device - ONLY when user clicks"""
+    """
+    Manual ping - only when user clicks the ping button
+    """
     user = await get_current_user(token, db)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -647,25 +641,34 @@ async def manual_ping_device(device_id: int, token: str, db: AsyncSession = Depe
     if not device.ip_address:
         raise HTTPException(status_code=400, detail="Device has no IP address")
     
-    logger.info(f"Manual ping request for {device.name} ({device.ip_address}) by {user.username}")
+    logger.info(f"Manual ping requested by {user.username} for device {device.name} ({device.ip_address})")
     
     # Ping the device
     success, response_time = await ping_device(device.ip_address)
     
-    # Update device with ping results
+    # Update device
+    old_status = device.status
     device.status = "online" if success else "offline"
     device.response_time = response_time
     device.last_ping = datetime.utcnow()
-    device.ping_total_count += 1
-    
     if success:
         device.last_seen = datetime.utcnow()
-        device.ping_success_count += 1
+        # Reset uptime if device was offline before
+        if old_status == "offline":
+            device.uptime = 0
+    
+    # Update success rate (simple moving average)
+    if device.ping_success_rate is None:
+        device.ping_success_rate = 100.0 if success else 0.0
+    else:
+        # Weight: 80% previous, 20% current (less aggressive than continuous ping)
+        current_success = 100.0 if success else 0.0
+        device.ping_success_rate = (device.ping_success_rate * 0.8) + (current_success * 0.2)
     
     await db.commit()
     await db.refresh(device)
     
-    # Broadcast ping result to all connected clients
+    # Broadcast manual ping result to all connected clients
     await manager.broadcast({
         "type": "manual_ping_result",
         "data": {
@@ -681,12 +684,11 @@ async def manual_ping_device(device_id: int, token: str, db: AsyncSession = Depe
     
     return {
         "device_id": device_id,
-        "device_name": device.name,
         "status": device.status,
         "response_time": response_time,
         "success": success,
         "timestamp": device.last_ping.isoformat(),
-        "ping_success_rate": (device.ping_success_count / device.ping_total_count * 100) if device.ping_total_count > 0 else 0
+        "message": f"Ping {'successful' if success else 'failed'}"
     }
 
 @app.put("/api/devices/{device_id}", response_model=DeviceResponse)
@@ -771,7 +773,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/")
 async def root():
-    return {"message": "Area51 Security Platform - Manual Ping Only", "status": "ready"}
+    return {"message": "Area51 Security Platform - Manual Ping Mode", "status": "ready"}
 
 if __name__ == "__main__":
     import uvicorn

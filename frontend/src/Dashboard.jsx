@@ -1127,85 +1127,255 @@ const Dashboard = ({ token, onLogout }) => {
               </div>
             </div>
 
-            {editingDevice ? (
-              // Edit Form
-              <form onSubmit={updateDevice} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      Device Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedDevice.name}
-                      onChange={(e) => setSelectedDevice({...selectedDevice, name: e.target.value})}
-                      style={{
-                        width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0',
-                        borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
+            
 
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                      IP Address
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedDevice.ip_address || ''}
-                      onChange={(e) => setSelectedDevice({...selectedDevice, ip_address: e.target.value})}
-                      style={{
-                        width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0',
-                        borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
+{editingDevice ? (
+  // Enhanced Edit Form - Can change ALL device details
+  <form onSubmit={updateDevice} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    {/* Device Name and Type */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Device Name *
+        </label>
+        <input
+          type="text"
+          value={selectedDevice.name}
+          onChange={(e) => setSelectedDevice({...selectedDevice, name: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+          required
+        />
+      </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
-                    Description
-                  </label>
-                  <textarea
-                    value={selectedDevice.description || ''}
-                    onChange={(e) => setSelectedDevice({...selectedDevice, description: e.target.value})}
-                    rows="3"
-                    style={{
-                      width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0',
-                      borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box',
-                      resize: 'vertical'
-                    }}
-                    placeholder="Device description..."
-                  />
-                </div>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Device Type *
+        </label>
+        <select
+          value={selectedDevice.device_type}
+          onChange={(e) => setSelectedDevice({...selectedDevice, device_type: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+          required
+        >
+          {deviceTypes.map(type => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
 
-                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingDevice(false)}
-                    style={{
-                      flex: 1, padding: '12px', background: '#f8fafc',
-                      color: '#64748b', border: '1px solid #e2e8f0',
-                      borderRadius: '8px', cursor: 'pointer', fontSize: '14px'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      flex: 1, padding: '12px',
-                      background: loading ? '#94a3b8' : '#6366f1',
-                      color: 'white', border: 'none', borderRadius: '8px',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      fontSize: '14px', fontWeight: '500'
-                    }}
-                  >
-                    {loading ? 'Updating...' : 'Update Device'}
-                  </button>
-                </div>
-              </form>
+    {/* Operating System */}
+    <div>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+        Operating System *
+      </label>
+      <select
+        value={selectedDevice.operating_system}
+        onChange={(e) => setSelectedDevice({...selectedDevice, operating_system: e.target.value})}
+        style={{
+          width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+          borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+        }}
+        required
+      >
+        {Object.entries(groupedOS).map(([category, systems]) => (
+          <optgroup key={category} label={`─── ${category} ───`}>
+            {systems.map(os => (
+              <option key={os.value} value={os.value}>
+                {os.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </div>
+
+    {/* OS Version */}
+    <div>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+        OS Version *
+      </label>
+      <input
+        type="text"
+        placeholder="e.g., 22.04 LTS, 11 Pro, 14.1"
+        value={selectedDevice.os_version}
+        onChange={(e) => setSelectedDevice({...selectedDevice, os_version: e.target.value})}
+        style={{
+          width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+          borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+        }}
+        required
+      />
+    </div>
+
+    {/* Network Information */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          IP Address
+        </label>
+        <input
+          type="text"
+          placeholder="192.168.1.100"
+          value={selectedDevice.ip_address || ''}
+          onChange={(e) => setSelectedDevice({...selectedDevice, ip_address: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Hostname
+        </label>
+        <input
+          type="text"
+          placeholder="web-server-01"
+          value={selectedDevice.hostname || ''}
+          onChange={(e) => setSelectedDevice({...selectedDevice, hostname: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+        />
+      </div>
+    </div>
+
+    {/* Environment and Priority */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Environment *
+        </label>
+        <select
+          value={selectedDevice.environment}
+          onChange={(e) => setSelectedDevice({...selectedDevice, environment: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+          required
+        >
+          <option value="development">🟦 Development</option>
+          <option value="testing">🟨 Testing</option>
+          <option value="staging">🟧 Staging</option>
+          <option value="production">🟥 Production</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Business Priority *
+        </label>
+        <select
+          value={selectedDevice.business_criticality}
+          onChange={(e) => setSelectedDevice({...selectedDevice, business_criticality: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+          required
+        >
+          <option value="low">🟢 Low Priority</option>
+          <option value="medium">🟡 Medium Priority</option>
+          <option value="high">🟠 High Priority</option>
+          <option value="critical">🔴 Critical System</option>
+        </select>
+      </div>
+    </div>
+
+    {/* Location and Owner Contact */}
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Location
+        </label>
+        <input
+          type="text"
+          placeholder="Server Room A"
+          value={selectedDevice.location || ''}
+          onChange={(e) => setSelectedDevice({...selectedDevice, location: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+          Owner Contact
+        </label>
+        <input
+          type="text"
+          placeholder="admin@company.com"
+          value={selectedDevice.owner_contact || ''}
+          onChange={(e) => setSelectedDevice({...selectedDevice, owner_contact: e.target.value})}
+          style={{
+            width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+            borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box'
+          }}
+        />
+      </div>
+    </div>
+
+    {/* Description */}
+    <div>
+      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+        Description
+      </label>
+      <textarea
+        placeholder="Device description..."
+        value={selectedDevice.description || ''}
+        onChange={(e) => setSelectedDevice({...selectedDevice, description: e.target.value})}
+        rows="4"
+        style={{
+          width: '100%', padding: '12px 16px', border: '1px solid #e2e8f0',
+          borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box',
+          resize: 'vertical'
+        }}
+      />
+    </div>
+
+    {/* Action Buttons */}
+    <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+      <button
+        type="button"
+        onClick={() => setEditingDevice(false)}
+        style={{
+          flex: 1, padding: '12px', background: '#f8fafc',
+          color: '#64748b', border: '1px solid #e2e8f0',
+          borderRadius: '8px', cursor: 'pointer', fontSize: '14px'
+        }}
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        disabled={loading}
+        style={{
+          flex: 1, padding: '12px',
+          background: loading ? '#94a3b8' : '#6366f1',
+          color: 'white', border: 'none', borderRadius: '8px',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          fontSize: '14px', fontWeight: '500'
+        }}
+      >
+        {loading ? 'Updating Device...' : 'Update Device'}
+      </button>
+    </div>
+  </form>
+
             ) : (
               // Device Details View with Ping Info
               <div>
@@ -1330,46 +1500,67 @@ const Dashboard = ({ token, onLogout }) => {
 
                 {/* Configuration */}
                 <div>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
-                    Configuration
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Environment</span>
-                      <div style={{ 
-                        padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500',
-                        background: selectedDevice.environment === 'production' ? '#fecaca' :
-                                   selectedDevice.environment === 'staging' ? '#fef3c7' : '#d1fae5',
-                        color: selectedDevice.environment === 'production' ? '#dc2626' :
-                               selectedDevice.environment === 'staging' ? '#d97706' : '#059669',
-                        textAlign: 'center', textTransform: 'uppercase'
-                      }}>
-                        {selectedDevice.environment}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Priority</span>
-                      <div style={{ 
-                        padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500',
-                        background: selectedDevice.business_criticality === 'critical' ? '#fecaca' :
-                                   selectedDevice.business_criticality === 'high' ? '#fef3c7' : '#f3f4f6',
-                        color: selectedDevice.business_criticality === 'critical' ? '#dc2626' :
-                               selectedDevice.business_criticality === 'high' ? '#d97706' : '#374151',
-                        textAlign: 'center', textTransform: 'uppercase'
-                      }}>
-                        {selectedDevice.business_criticality}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Added</span>
-                      <div style={{ fontSize: '12px', fontWeight: '500', color: '#1e293b' }}>
-                        {new Date(selectedDevice.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+  <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+    Configuration
+  </h3>
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+    <div>
+      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Environment</span>
+      <div style={{ 
+        padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500',
+        background: selectedDevice.environment === 'production' ? '#fecaca' :
+                   selectedDevice.environment === 'staging' ? '#fef3c7' : '#d1fae5',
+        color: selectedDevice.environment === 'production' ? '#dc2626' :
+               selectedDevice.environment === 'staging' ? '#d97706' : '#059669',
+        textAlign: 'center', textTransform: 'uppercase'
+      }}>
+        {selectedDevice.environment}
+      </div>
+    </div>
+    
+    <div>
+      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Priority</span>
+      <div style={{ 
+        padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500',
+        background: selectedDevice.business_criticality === 'critical' ? '#fecaca' :
+                   selectedDevice.business_criticality === 'high' ? '#fef3c7' : '#f3f4f6',
+        color: selectedDevice.business_criticality === 'critical' ? '#dc2626' :
+               selectedDevice.business_criticality === 'high' ? '#d97706' : '#374151',
+        textAlign: 'center', textTransform: 'uppercase'
+      }}>
+        {selectedDevice.business_criticality}
+      </div>
+    </div>
+    
+    <div>
+      <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Added</span>
+      <div style={{ fontSize: '12px', fontWeight: '500', color: '#1e293b' }}>
+        {new Date(selectedDevice.created_at).toLocaleDateString()}
+      </div>
+    </div>
+  </div>
+
+  {/* Additional Information Grid */}
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '20px' }}>
+    {selectedDevice.location && (
+      <div>
+        <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Location</span>
+        <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
+          {selectedDevice.location}
+        </div>
+      </div>
+    )}
+    
+    {selectedDevice.owner_contact && (
+      <div>
+        <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>Owner Contact</span>
+        <div style={{ fontSize: '14px', fontWeight: '500', color: '#1e293b' }}>
+          {selectedDevice.owner_contact}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
 
                 {/* Description */}
                 {selectedDevice.description && (
